@@ -27,9 +27,9 @@ class MyApp extends StatelessWidget {
 
 class VocabHomePage extends StatelessWidget {
   final TextEditingController _controller = TextEditingController(
-      text: '''1. Hej, hur mår du? - Hi, how are you?
-2. Jag gillar att läsa böcker I like to read books.
-3. Kan du hjälpa mig? - Can you help me?
+      text: '''1. Hi, how are you? - Hej, hur mår du?
+2. I like to read books. Jag gillar att läsa böcker.
+3. Can you help me? - Kan du hjälpa mig?
 '''
   );
 
@@ -47,7 +47,7 @@ class VocabHomePage extends StatelessWidget {
               controller: _controller,
               maxLines: 10,
               decoration: InputDecoration(
-                hintText: 'Enter vocab pairs in the format:\n1. Swedish - English',
+                hintText: 'Enter vocab pairs in the format:\n1. English - Swedish',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -88,7 +88,7 @@ class VocabHomePage extends StatelessWidget {
                       return ListTile(
                         title: Row(
                           children: [
-                            Expanded(child: Text('${entry.swedish} - ${entry.english}')),
+                            Expanded(child: Text('${entry.english} - ${entry.swedish}')),
                             IconButton(
                               icon: Icon(Icons.arrow_left),
                               onPressed: () {
