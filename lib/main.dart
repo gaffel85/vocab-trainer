@@ -26,11 +26,15 @@ class MyApp extends StatelessWidget {
 }
 
 class VocabHomePage extends StatelessWidget {
+  // Check if the app is running in development mode
+  static const bool isDevelopment = bool.fromEnvironment('dart.vm.product') == false;
+
+  // Provide example text only in development mode
   final TextEditingController _controller = TextEditingController(
-      text: '''1. Hi, how are you? - Hej, hur mår du?
+      text: isDevelopment ? '''1. Hi, how are you? - Hej, hur mår du?
 2. I like to read books. Jag gillar att läsa böcker.
 3. Can you help me? - Kan du hjälpa mig?
-'''
+''' : ''
   );
 
   @override
