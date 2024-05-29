@@ -2,6 +2,11 @@
 
 A new Flutter project.
 
+## Build for web
+```shell
+flutter build web
+```
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
