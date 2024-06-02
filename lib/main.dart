@@ -31,9 +31,24 @@ class VocabHomePage extends StatelessWidget {
 
   // Provide example text only in development mode
   final TextEditingController _controller = TextEditingController(
-      text: isDevelopment ? '''1. Hi, how are you? - Hej, hur mår du?
-2. I like to read books. Jag gillar att läsa böcker.
-3. Can you help me? - Kan du hjälpa mig?
+      text: isDevelopment ? '''1. trust                -    lita på
+2. drawing            -    teckning
+3. ruler                -    linjal
+4. parallel            -    parallell
+5. circle                -    cirkel
+6. spot                -    punkt, fläck
+7. cross            -    kryss
+8. cover            -    täcka
+9. stirra på            -    stare at
+10. index finger        -    pekfinger
+11. tip                -    spets, topp
+12. apart                -    isär
+13. float                -    flyta
+14. loosely            -    löst
+15. bend                -    böjas, böja sig
+16. rubber            -    gummi
+17. touch together        -    föra samman
+18. cooperate            -    samarbeta
 ''' : ''
   );
 

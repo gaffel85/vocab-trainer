@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'vocab_provider.dart';
-import 'vocab_entry.dart';
 import 'result_screen.dart';
 import 'dart:math';
 
@@ -16,6 +15,7 @@ class _QuizScreenState extends State<QuizScreen> {
   int _currentIndex = 0;
   int _score = 0;
   final TextEditingController _answerController = TextEditingController();
+  final List<String> _answers = [];
   final List<int> _attempts = [];
   int _hintLevel = 0;
   String _currentHint = '';
@@ -24,7 +24,17 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _attempts.add(0);
+    _initializeAttemptsAndAnswers();
+  }
+
+  void _initializeAttemptsAndAnswers() {
+    final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
+    _attempts.clear();
+    _answers.clear();
+    for (var i = 0; i < vocabProvider.entries.length; i++) {
+      _attempts.add(0);
+      _answers.add('');
+    }
   }
 
   @override
@@ -37,22 +47,21 @@ class _QuizScreenState extends State<QuizScreen> {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
     if (_currentIndex < vocabProvider.entries.length) {
       final currentEntry = vocabProvider.entries[_currentIndex];
-      if (_normalize(currentEntry.english) == _normalize(_answerController.text)) {
+      final normalizedAnswer = _normalize(_answerController.text);
+      if (_normalize(currentEntry.english) == normalizedAnswer) {
         _score++;
-        _attempts[_currentIndex] += 1;
-        _goToNextQuestion();
-      } else {
-        _attempts[_currentIndex] += 1;
-        _provideHint();
       }
+      _answers[_currentIndex] = _answerController.text;
+      _attempts[_currentIndex] += 1;
+      _goToNextQuestion();
     }
   }
 
   String _normalize(String input) {
     return input
         .toLowerCase()
-        .replaceAll(RegExp(r"[^\w\s']"), '')  // Remove non-alphanumeric characters except for spaces and apostrophes
-        .replaceAll(RegExp(r"['‘’]"), "'")   // Normalize apostrophes
+        .replaceAll(RegExp(r"[^\w\s']"), '') // Remove non-alphanumeric characters except for spaces and apostrophes
+        .replaceAll(RegExp(r"['‘’]"), "'") // Normalize apostrophes
         .trim();
   }
 
@@ -86,8 +95,7 @@ class _QuizScreenState extends State<QuizScreen> {
     final chars = input.split('');
     final numLettersToReveal = (chars.where((c) => RegExp(r'\w').hasMatch(c)).length * percentage).round();
 
-    var indices = List<int>.generate(chars.length, (index) => index)
-      ..shuffle(random);
+    var indices = List<int>.generate(chars.length, (index) => index)..shuffle(random);
     int revealed = 0;
 
     for (int i = 0; i < chars.length; i++) {
@@ -103,19 +111,29 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _goToNextQuestion() {
     setState(() {
-      _currentIndex++;
-      _hintLevel = 0;
-      _showHint = false;
-      if (_currentIndex >= Provider.of<VocabProvider>(context, listen: false).entries.length) {
+      if (_currentIndex < Provider.of<VocabProvider>(context, listen: false).entries.length - 1) {
+        _currentIndex++;
+        _hintLevel = 0;
+        _showHint = false;
+        _answerController.clear();
+      } else {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ResultScreen(score: _score, attempts: _attempts),
           ),
         );
-      } else {
+      }
+    });
+  }
+
+  void _goToPreviousQuestion() {
+    setState(() {
+      if (_currentIndex > 0) {
+        _currentIndex--;
+        _hintLevel = 0;
+        _showHint = false;
         _answerController.clear();
-        _attempts.add(0);
       }
     });
   }
@@ -149,35 +167,75 @@ class _QuizScreenState extends State<QuizScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Quiz'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Center(
+              child: Text('${_currentIndex + 1}/${vocabProvider.entries.length}'),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
-              'Score: $_score/${_currentIndex}',
-              style: TextStyle(fontSize: 18),
-            ),
-            Text(
-              'Remaining: ${vocabProvider.entries.length - _currentIndex}',
-              style: TextStyle(fontSize: 18),
-            ),
-            SizedBox(height: 20),
-            Text(
-              currentEntry.swedish,
-              style: TextStyle(fontSize: 24),
-            ),
-            TextField(
-              controller: _answerController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'Type the English translation here',
+            Expanded(
+              child: ListView.builder(
+                itemCount: vocabProvider.entries.length,
+                itemBuilder: (context, index) {
+                  if (index < _currentIndex - 5 || index > _currentIndex + 5) {
+                    return Container();
+                  }
+                  final entry = vocabProvider.entries[index];
+                  return ListTile(
+                    dense: true,
+                    title: RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${entry.swedish} ',
+                            style: TextStyle(color: Colors.black),
+                          ),
+                          TextSpan(
+                            text: _getUserAnswer(index),
+                            style: TextStyle(
+                              color: _getEntryColor(index),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    subtitle: index == _currentIndex
+                        ? TextField(
+                      controller: _answerController,
+                      autofocus: true,
+                      onSubmitted: (_) => _checkAnswer(),
+                      decoration: InputDecoration(
+                        hintText: 'Type the English translation here',
+                      ),
+                    )
+                        : Container(),
+                  );
+                },
               ),
             ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _checkAnswer,
-              child: Text('Continue'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: _goToPreviousQuestion,
+                  child: Text('Back'),
+                ),
+                ElevatedButton(
+                  onPressed: _provideHint,
+                  child: Text('Hint'),
+                ),
+                ElevatedButton(
+                  onPressed: _checkAnswer,
+                  child: Text('Next'),
+                ),
+              ],
             ),
             SizedBox(height: 10),
             _showHint
@@ -190,5 +248,29 @@ class _QuizScreenState extends State<QuizScreen> {
         ),
       ),
     );
+  }
+
+  Color _getEntryColor(int index) {
+    if (_answers[index].isEmpty) {
+      return Colors.black;
+    } else if (_normalize(_answers[index]) == _normalize(Provider.of<VocabProvider>(context, listen: false).entries[index].english)) {
+      return Colors.green;
+    } else if (_attempts[index] == 1) {
+      return Colors.red;
+    } else if (_attempts[index] == 2) {
+      return Colors.yellow;
+    } else if (_attempts[index] == 3) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  String _getUserAnswer(int index) {
+    if (_answers[index].isNotEmpty) {
+      return _answers[index];
+    } else {
+      return '';
+    }
   }
 }
