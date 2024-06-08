@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vocab_trainer/vocab_entry.dart';
 import 'vocab_provider.dart';
 import 'result_screen.dart';
 import 'dart:math';
@@ -13,10 +14,8 @@ class QuizScreen extends StatefulWidget {
 
 class _QuizScreenState extends State<QuizScreen> {
   int _currentIndex = 0;
-  int _score = 0;
   final TextEditingController _answerController = TextEditingController();
-  final List<String> _answers = [];
-  final List<int> _attempts = [];
+  final List<Result> _results = [];
   int _hintLevel = 0;
   String _currentHint = '';
   bool _showHint = false;
@@ -24,16 +23,14 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    _initializeAttemptsAndAnswers();
+    _initializeResults();
   }
 
-  void _initializeAttemptsAndAnswers() {
+  void _initializeResults() {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
-    _attempts.clear();
-    _answers.clear();
+    _results.clear();
     for (var i = 0; i < vocabProvider.entries.length; i++) {
-      _attempts.add(0);
-      _answers.add('');
+      _results.add(Result(answer: '', isCorrect: false, hintsUsed: 0, attempts: 0));
     }
   }
 
@@ -48,11 +45,13 @@ class _QuizScreenState extends State<QuizScreen> {
     if (_currentIndex < vocabProvider.entries.length) {
       final currentEntry = vocabProvider.entries[_currentIndex];
       final normalizedAnswer = _normalize(_answerController.text);
+
       if (_normalize(currentEntry.english) == normalizedAnswer) {
-        _score++;
+        _results[_currentIndex] = _results[_currentIndex].copyWith(answer: _answerController.text, isCorrect: true, attempts: _results[_currentIndex].attempts + 1);
+      } else {
+        _results[_currentIndex] = _results[_currentIndex].copyWith(answer: _answerController.text, isCorrect: false, attempts: _results[_currentIndex].attempts + 1);
       }
-      _answers[_currentIndex] = _answerController.text;
-      _attempts[_currentIndex] += 1;
+
       _goToNextQuestion();
     }
   }
@@ -117,10 +116,11 @@ class _QuizScreenState extends State<QuizScreen> {
         _showHint = false;
         _answerController.clear();
       } else {
+        _saveResults();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ResultScreen(score: _score, attempts: _attempts, userAnswers: _answers,),
+            builder: (context) => ResultScreen(),
           ),
         );
       }
@@ -142,10 +142,18 @@ class _QuizScreenState extends State<QuizScreen> {
     setState(() {
       if (_hintLevel < 3) {
         _hintLevel++;
+        _results[_currentIndex] = _results[_currentIndex].copyWith(hintsUsed: _hintLevel);
       }
       _showHint = true;
       _generateHint();
     });
+  }
+
+  void _saveResults() {
+    final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
+    for (int i = 0; i < _results.length; i++) {
+      vocabProvider.addResult(i, _results[i]);
+    }
   }
 
   @override
@@ -251,15 +259,15 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Color _getEntryColor(int index) {
-    if (_answers[index].isEmpty) {
+    if (_results[index].answer.isEmpty) {
       return Colors.black;
-    } else if (_normalize(_answers[index]) == _normalize(Provider.of<VocabProvider>(context, listen: false).entries[index].english)) {
+    } else if (_results[index].isCorrect) {
       return Colors.green;
-    } else if (_attempts[index] == 1) {
+    } else if (_results[index].attempts == 1) {
       return Colors.red;
-    } else if (_attempts[index] == 2) {
+    } else if (_results[index].attempts == 2) {
       return Colors.yellow;
-    } else if (_attempts[index] == 3) {
+    } else if (_results[index].attempts == 3) {
       return Colors.orange;
     } else {
       return Colors.red;
@@ -267,10 +275,6 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   String _getUserAnswer(int index) {
-    if (_answers[index].isNotEmpty) {
-      return _answers[index];
-    } else {
-      return '';
-    }
+    return _results[index].answer.isNotEmpty ? _results[index].answer : '';
   }
 }

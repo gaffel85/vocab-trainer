@@ -43,13 +43,13 @@ class VocabProvider with ChangeNotifier {
         if (dashIndex != -1) {
           final english = entryText.substring(0, dashIndex).trim();
           final swedish = entryText.substring(dashIndex + 3).trim();
-          _entries.add(VocabEntry(swedish: swedish, english: english, hasDash: true));
+          _entries.add(VocabEntry(swedish: swedish, english: english, hasDash: true, results: []));
         } else {
           final vocabParts = entryText.split(' ');
           final separatorIndex = vocabParts.length ~/ 2;
           final englishPart = vocabParts.sublist(0, separatorIndex).join(' ');
           final swedishPart = vocabParts.sublist(separatorIndex).join(' ');
-          _entries.add(VocabEntry(swedish: swedishPart.trim(), english: englishPart.trim(), hasDash: false));
+          _entries.add(VocabEntry(swedish: swedishPart.trim(), english: englishPart.trim(), hasDash: false, results: []));
         }
       }
     }
@@ -92,6 +92,7 @@ class VocabProvider with ChangeNotifier {
           swedish: swedishParts.join(' ').trim(),
           english: englishParts.join(' ').trim(),
           hasDash: true,
+            results: []
         );
         _saveEntries();
         notifyListeners();
@@ -112,10 +113,18 @@ class VocabProvider with ChangeNotifier {
           swedish: swedishParts.join(' ').trim(),
           english: englishParts.join(' ').trim(),
           hasDash: true,
+            results: []
         );
         _saveEntries();
         notifyListeners();
       }
+    }
+  }
+
+  void addResult(int index, Result result) {
+    if (index < _entries.length) {
+      _entries[index].results.add(result);
+      notifyListeners();
     }
   }
 }

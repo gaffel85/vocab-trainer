@@ -5,15 +5,11 @@ import 'vocab_provider.dart';
 import 'package:provider/provider.dart';
 
 class ResultScreen extends StatelessWidget {
-  final int score;
-  final List<int> attempts;
-  final List<String> userAnswers;
-
-  ResultScreen({required this.score, required this.attempts, required this.userAnswers});
 
   @override
   Widget build(BuildContext context) {
-    final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
+    final vocabProvider = Provider.of<VocabProvider>(context);
+    final entries = vocabProvider.entries;
 
     return Scaffold(
       appBar: AppBar(
@@ -23,17 +19,15 @@ class ResultScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Text(
-              'Score: $score/${vocabProvider.entries.length}',
-              style: TextStyle(fontSize: 24),
-            ),
-            SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
-                itemCount: vocabProvider.entries.length,
+                itemCount: entries.length,
                 itemBuilder: (context, index) {
-                  final entry = vocabProvider.entries[index];
-                  final userAnswer = userAnswers[index];
+                  final entry = entries[index];
+                  final results = entry.results;
+                  final lastResult = results.isNotEmpty ? results.last : null;
+
+                  final userAnswer = lastResult?.answer ?? "";
                   final isCorrect = _normalize(userAnswer) == _normalize(entry.english);
 
                   return ListTile(
@@ -59,7 +53,7 @@ class ResultScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.red),
                     )
                         : null,
-                    trailing: _getAttemptIcon(attempts[index]),
+                    trailing: _getAttemptIcon(lastResult?.attempts ?? 0),
                   );
                 },
               ),
