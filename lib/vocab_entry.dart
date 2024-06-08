@@ -28,6 +28,28 @@ class Result {
       attempts: attempts ?? this.attempts,
     );
   }
+
+  int needsMorePracticeScore() {
+    if (isCorrect && attempts == 1 && hintsUsed == 0) {
+      return 0;
+    } else if (attempts == 2) {
+      return 1;
+    } else if (hintsUsed == 1) {
+      return 2;
+    } else if (attempts == 3 || hintsUsed == 2) {
+      return 3;
+    } else if (attempts == 4) {
+      return 4;
+    } else if (hintsUsed == 3) {
+      return 5;
+    } else if (attempts > 4) {
+      return 6;
+    } else if (hintsUsed > 3) {
+      return 7;
+    } else {
+      return 0; // In case none of the conditions match, although ideally this shouldn't happen
+    }
+  }
 }
 
 class VocabEntry {
@@ -45,11 +67,10 @@ class VocabEntry {
 
   factory VocabEntry.fromJson(Map<String, dynamic> json) {
     return VocabEntry(
-      swedish: json['swedish'],
-      english: json['english'],
-      hasDash: json['hasDash'],
-      results: []
-    );
+        swedish: json['swedish'],
+        english: json['english'],
+        hasDash: json['hasDash'],
+        results: []);
   }
 
   Map<String, dynamic> toJson() {
@@ -58,5 +79,17 @@ class VocabEntry {
       'english': english,
       'hasDash': hasDash,
     };
+  }
+
+  int worstScoreOf2LastResults() {
+    if (results.length == 1) {
+      return results[0].needsMorePracticeScore();
+    }
+    if (results.length < 2) {
+      return 0;
+    }
+    int score1 = results[results.length - 1].needsMorePracticeScore();
+    int score2 = results[results.length - 2].needsMorePracticeScore();
+    return score1 > score2 ? score1 : score2;
   }
 }

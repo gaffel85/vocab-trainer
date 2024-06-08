@@ -1,6 +1,7 @@
 // lib/result_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:vocab_trainer/color_utils.dart';
 import 'vocab_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -53,7 +54,7 @@ class ResultScreen extends StatelessWidget {
                       style: TextStyle(color: Colors.red),
                     )
                         : null,
-                    trailing: _getAttemptIcon(lastResult?.attempts ?? 0),
+                    trailing: Icon(Icons.check_circle, color: getEntryColor(lastResult!))
                   );
                 },
               ),
@@ -62,7 +63,7 @@ class ResultScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text('Back to Main Screen'),
+              child: const Text('Back to Main Screen'),
             ),
           ],
         ),
@@ -76,18 +77,5 @@ class ResultScreen extends StatelessWidget {
         .replaceAll(RegExp(r"[^\w\s']"), '') // Remove non-alphanumeric characters except for spaces and apostrophes
         .replaceAll(RegExp(r"['‘’]"), "'") // Normalize apostrophes
         .trim();
-  }
-
-  Widget _getAttemptIcon(int attempts) {
-    switch (attempts) {
-      case 1:
-        return Icon(Icons.check_circle, color: Colors.green);
-      case 2:
-        return Icon(Icons.check_circle, color: Colors.yellow);
-      case 3:
-        return Icon(Icons.check_circle, color: Colors.orange);
-      default:
-        return Icon(Icons.check_circle, color: Colors.red);
-    }
   }
 }
