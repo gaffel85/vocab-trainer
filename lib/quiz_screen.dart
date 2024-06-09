@@ -1,6 +1,7 @@
 // lib/quiz_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:vocab_trainer/vocab_entry.dart';
 import 'vocab_provider.dart';
@@ -19,6 +20,7 @@ class QuizScreen extends StatefulWidget {
 class _QuizScreenState extends State<QuizScreen> {
   int _currentLineIndex = 0;
   final TextEditingController _answerController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   final List<ResultWithIndex> _results = [];
   String _currentHint = '';
   bool _showHint = false;
@@ -51,6 +53,7 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void dispose() {
     _answerController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -141,6 +144,10 @@ class _QuizScreenState extends State<QuizScreen> {
         _showHint = false;
         _answerController.clear();
         _answerController.text = _getUserAnswer(_currentLineIndex);
+        _focusNode.unfocus();
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          FocusScope.of(context).requestFocus(_focusNode);
+        });// Request focus f
       } else {
         _saveResults();
         Navigator.pushReplacement(
@@ -160,6 +167,10 @@ class _QuizScreenState extends State<QuizScreen> {
         _showHint = false;
         _answerController.clear();
         _answerController.text = _getUserAnswer(_currentLineIndex);
+        _focusNode.unfocus();
+        WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+          FocusScope.of(context).requestFocus(_focusNode);
+        });// Request focus f
       }
     });
   }
@@ -172,7 +183,21 @@ class _QuizScreenState extends State<QuizScreen> {
       }
       _showHint = true;
       _generateHint();
+      _focusNode.unfocus();
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+        FocusScope.of(context).requestFocus(_focusNode);
+      });// Request focus for the text field
     });
+  }
+
+  void _handleKey(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+        _goToNextQuestion();
+      } else if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+        _goToPreviousQuestion();
+      }
+    }
   }
 
   void _saveResults() {
@@ -209,7 +234,10 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
         ],
       ),
-      body: Padding(
+    body: KeyboardListener(
+    focusNode: FocusNode(),
+    onKeyEvent: _handleKey,
+    child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
@@ -244,6 +272,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ? TextField(
                       controller: _answerController,
                       autofocus: true,
+                      focusNode: _focusNode,
                       onSubmitted: (_) => _checkAnswer(),
                       decoration: InputDecoration(
                         hintText: 'Type the English translation here',
@@ -280,7 +309,8 @@ class _QuizScreenState extends State<QuizScreen> {
                 : Container(),
           ],
         ),
-      ),
+      )
+    ),
     );
   }
 
