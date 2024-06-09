@@ -8,29 +8,43 @@ import 'result_screen.dart';
 import 'dart:math';
 
 class QuizScreen extends StatefulWidget {
+  final List<int>? indexes;
+
+  QuizScreen({this.indexes});
+
   @override
   _QuizScreenState createState() => _QuizScreenState();
 }
 
 class _QuizScreenState extends State<QuizScreen> {
-  int _currentIndex = 0;
+  int _currentLineIndex = 0;
   final TextEditingController _answerController = TextEditingController();
-  final List<Result> _results = [];
-  int _hintLevel = 0;
+  final List<ResultWithIndex> _results = [];
   String _currentHint = '';
   bool _showHint = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeResults();
+
+    final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
+
+    List<int> quizIndexes = [];
+    if (widget.indexes != null && widget.indexes!.isNotEmpty) {
+      quizIndexes = widget.indexes!;
+    } else {
+      quizIndexes = List<int>.generate(vocabProvider.entries.length, (index) => index);
+    }
+    _initializeResults(quizIndexes);
   }
 
-  void _initializeResults() {
+  void _initializeResults(List<int> quizIndexes) {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
     _results.clear();
     for (var i = 0; i < vocabProvider.entries.length; i++) {
-      _results.add(Result(answer: '', isCorrect: false, hintsUsed: 0, attempts: 0));
+      if (quizIndexes.contains(i)) {
+        _results.add(ResultWithIndex(index: i, result: Result(answer: '', isCorrect: false, hintsUsed: 0, attempts: 0)));
+      }
     }
   }
 
@@ -42,14 +56,15 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _checkAnswer() {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
-    if (_currentIndex < vocabProvider.entries.length) {
-      final currentEntry = vocabProvider.entries[_currentIndex];
+    final currentIndex = getVocabIndex();
+    if (currentIndex < vocabProvider.entries.length) {
+      final currentEntry = vocabProvider.entries[currentIndex];
       final normalizedAnswer = _normalize(_answerController.text);
 
       if (_normalize(currentEntry.english) == normalizedAnswer) {
-        _results[_currentIndex] = _results[_currentIndex].copyWith(answer: _answerController.text, isCorrect: true, attempts: _results[_currentIndex].attempts + 1);
+        _results[_currentLineIndex] = _results[_currentLineIndex].copyWith(answer: _answerController.text, isCorrect: true, attempts: _results[_currentLineIndex].attempts + 1);
       } else {
-        _results[_currentIndex] = _results[_currentIndex].copyWith(answer: _answerController.text, isCorrect: false, attempts: _results[_currentIndex].attempts + 1);
+        _results[_currentLineIndex] = _results[_currentLineIndex].copyWith(answer: _answerController.text, isCorrect: false, attempts: _results[_currentLineIndex].attempts + 1);
       }
 
       _goToNextQuestion();
@@ -64,12 +79,23 @@ class _QuizScreenState extends State<QuizScreen> {
         .trim();
   }
 
+  int getVocabIndex() {
+    if (_currentLineIndex < _results.length) {
+      final result = _results[_currentLineIndex];
+      return result.index;
+    } else {
+      return 0;
+    }
+  }
+
   void _generateHint() {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
-    if (_currentIndex < vocabProvider.entries.length) {
-      final currentEntry = vocabProvider.entries[_currentIndex];
+    final currentIndex = getVocabIndex();
+    final currentResult = _results[_currentLineIndex];
+    if (currentIndex < vocabProvider.entries.length) {
+      final currentEntry = vocabProvider.entries[currentIndex];
       final normalizedAnswer = _normalize(currentEntry.english);
-      switch (_hintLevel) {
+      switch (currentResult.hintsUsed) {
         case 0:
           _currentHint = normalizedAnswer.replaceAll(RegExp(r'\w'), '*');
           break;
@@ -110,11 +136,11 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _goToNextQuestion() {
     setState(() {
-      if (_currentIndex < Provider.of<VocabProvider>(context, listen: false).entries.length - 1) {
-        _currentIndex++;
-        _hintLevel = 0;
+      if (_currentLineIndex < _results.length - 1) {
+        _currentLineIndex++;
         _showHint = false;
         _answerController.clear();
+        _answerController.text = _getUserAnswer(_currentLineIndex);
       } else {
         _saveResults();
         Navigator.pushReplacement(
@@ -129,20 +155,20 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _goToPreviousQuestion() {
     setState(() {
-      if (_currentIndex > 0) {
-        _currentIndex--;
-        _hintLevel = 0;
+      if (_currentLineIndex > 0) {
+        _currentLineIndex--;
         _showHint = false;
         _answerController.clear();
+        _answerController.text = _getUserAnswer(_currentLineIndex);
       }
     });
   }
 
   void _provideHint() {
     setState(() {
-      if (_hintLevel < 3) {
-        _hintLevel++;
-        _results[_currentIndex] = _results[_currentIndex].copyWith(hintsUsed: _hintLevel);
+      final currentResult = _results[_currentLineIndex];
+      if (currentResult.hintsUsed < 3) {
+        _results[_currentLineIndex] = _results[_currentLineIndex].copyWith(hintsUsed: currentResult.hintsUsed + 1);
       }
       _showHint = true;
       _generateHint();
@@ -152,25 +178,24 @@ class _QuizScreenState extends State<QuizScreen> {
   void _saveResults() {
     final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
     for (int i = 0; i < _results.length; i++) {
-      vocabProvider.addResult(i, _results[i]);
+      final result = _results[i];
+      vocabProvider.addResult(result.index, result.result);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final vocabProvider = Provider.of<VocabProvider>(context);
-    if (_currentIndex >= vocabProvider.entries.length) {
+    if (_currentLineIndex >= _results.length) {
       return Scaffold(
         appBar: AppBar(
-          title: Text('Quiz Completed'),
+          title: const Text('Quiz Completed'),
         ),
         body: Center(
-          child: Text('Congratulations! You have completed the quiz.'),
+          child: const Text('Congratulations! You have completed the quiz.'),
         ),
       );
     }
-
-    final currentEntry = vocabProvider.entries[_currentIndex];
 
     return Scaffold(
       appBar: AppBar(
@@ -179,7 +204,7 @@ class _QuizScreenState extends State<QuizScreen> {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Center(
-              child: Text('${_currentIndex + 1}/${vocabProvider.entries.length}'),
+              child: Text('${_currentLineIndex + 1}/${vocabProvider.entries.length}'),
             ),
           ),
         ],
@@ -190,12 +215,13 @@ class _QuizScreenState extends State<QuizScreen> {
           children: [
             Expanded(
               child: ListView.builder(
-                itemCount: vocabProvider.entries.length,
+                itemCount: _results.length,
                 itemBuilder: (context, index) {
-                  if (index < _currentIndex - 5 || index > _currentIndex + 5) {
+                  final currentResult = _results[index];
+                  final entry = vocabProvider.entries[currentResult.index];
+                  if (index < _currentLineIndex - 5 || index > _currentLineIndex + 5) {
                     return Container();
                   }
-                  final entry = vocabProvider.entries[index];
                   return ListTile(
                     dense: true,
                     title: RichText(
@@ -214,7 +240,7 @@ class _QuizScreenState extends State<QuizScreen> {
                         ],
                       ),
                     ),
-                    subtitle: index == _currentIndex
+                    subtitle: index == _currentLineIndex
                         ? TextField(
                       controller: _answerController,
                       autofocus: true,
@@ -277,4 +303,32 @@ class _QuizScreenState extends State<QuizScreen> {
   String _getUserAnswer(int index) {
     return _results[index].answer.isNotEmpty ? _results[index].answer : '';
   }
+}
+
+/**
+ * Class to map a entry index with its result
+ */
+class ResultWithIndex {
+  final int index;
+  final Result result;
+
+  ResultWithIndex({required this.index, required this.result});
+  
+  ResultWithIndex copyWith({String? answer, bool? isCorrect, int? attempts, int? hintsUsed}) {
+    return ResultWithIndex(
+      index: index,
+      result: result.copyWith(
+        answer: answer ?? result.answer, 
+        isCorrect: isCorrect ?? result.isCorrect, 
+        attempts: attempts ?? result.attempts, 
+        hintsUsed: hintsUsed ?? result.hintsUsed
+        ),
+    );
+  }
+
+  /// Convienent method to get the attempts
+  int get attempts => result.attempts;
+  int get hintsUsed => result.hintsUsed;
+  bool get isCorrect => result.isCorrect;
+  String get answer => result.answer;
 }

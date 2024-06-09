@@ -47,7 +47,7 @@ class Result {
     } else if (hintsUsed > 3) {
       return 7;
     } else {
-      return 0; // In case none of the conditions match, although ideally this shouldn't happen
+      return 7; // In case none of the conditions match, although ideally this shouldn't happen
     }
   }
 }

@@ -92,7 +92,7 @@ class VocabProvider with ChangeNotifier {
           swedish: swedishParts.join(' ').trim(),
           english: englishParts.join(' ').trim(),
           hasDash: true,
-            results: []
+          results: entry.results, // Keep the existing results
         );
         _saveEntries();
         notifyListeners();
@@ -113,7 +113,7 @@ class VocabProvider with ChangeNotifier {
           swedish: swedishParts.join(' ').trim(),
           english: englishParts.join(' ').trim(),
           hasDash: true,
-            results: []
+          results: entry.results, // Keep the existing results
         );
         _saveEntries();
         notifyListeners();
@@ -124,6 +124,7 @@ class VocabProvider with ChangeNotifier {
   void addResult(int index, Result result) {
     if (index < _entries.length) {
       _entries[index].results.add(result);
+      _saveEntries();
       notifyListeners();
     }
   }

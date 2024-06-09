@@ -44,14 +44,6 @@ class VocabHomePage extends StatelessWidget {
 8. cover            -    täcka
 9. stirra på            -    stare at
 10. index finger        -    pekfinger
-11. tip                -    spets, topp
-12. apart                -    isär
-13. float                -    flyta
-14. loosely            -    löst
-15. bend                -    böjas, böja sig
-16. rubber            -    gummi
-17. touch together        -    föra samman
-18. cooperate            -    samarbeta
 '''
           : '');
 
@@ -138,6 +130,29 @@ class VocabHomePage extends StatelessWidget {
                 );
               },
               child: Text('Start Quiz'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final vocabProvider = Provider.of<VocabProvider>(context, listen: false);
+
+                final results = vocabProvider.entries
+                    .map((entry) => entry.results.last.needsMorePracticeScore());
+
+                final indexes = vocabProvider.entries
+                    .asMap()
+                    .entries
+                    .where((entry) => entry.value.results.isNotEmpty && entry.value.results.last.needsMorePracticeScore() > 0)
+                    .map((entry) => entry.key)
+                    .toList();
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => QuizScreen(indexes: indexes),
+                  ),
+                );
+              },
+              child: Text('Start Practice Quiz'),
             ),
             Consumer<VocabProvider>(
               builder: (context, vocabProvider, child) {
