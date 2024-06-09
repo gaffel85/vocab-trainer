@@ -29,6 +29,23 @@ class Result {
     );
   }
 
+  factory Result.fromJson(Map<String, dynamic> json) {
+    return Result(
+        answer: json['answer'] as String,
+        isCorrect: json['isCorrect'] as bool,
+        hintsUsed: json['hintsUsed'] as int,
+        attempts: json['attempts'] as int);
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'answer': answer,
+      'isCorrect': isCorrect,
+      'hintsUsed': hintsUsed,
+      'attempts': attempts,
+    };
+  }
+
   int needsMorePracticeScore() {
     if (isCorrect && attempts == 1 && hintsUsed == 0) {
       return 0;
@@ -66,11 +83,15 @@ class VocabEntry {
   });
 
   factory VocabEntry.fromJson(Map<String, dynamic> json) {
+    final allResults = (json['results'] as List<dynamic>)
+        .map((e) => Result.fromJson(e as Map<String, dynamic>))
+        .toList();
     return VocabEntry(
-        swedish: json['swedish'],
-        english: json['english'],
-        hasDash: json['hasDash'],
-        results: []);
+      swedish: json['swedish'],
+      english: json['english'],
+      hasDash: json['hasDash'],
+      results: allResults,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -78,6 +99,7 @@ class VocabEntry {
       'swedish': swedish,
       'english': english,
       'hasDash': hasDash,
+      'results': results.map((e) => e.toJson()).toList(),
     };
   }
 
