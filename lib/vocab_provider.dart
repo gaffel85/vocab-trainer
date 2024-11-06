@@ -30,7 +30,7 @@ class VocabProvider with ChangeNotifier {
     prefs.setString('vocabEntries', jsonEncode(jsonList));
   }
 
-  void addEntries(String text) {
+  void addEntries(String text, bool fromEnglish) {
     final lines = text.split('\n');
     for (var line in lines) {
       if (line.trim().isEmpty) continue;
@@ -41,15 +41,27 @@ class VocabProvider with ChangeNotifier {
         final dashIndex = entryText.indexOf(' - ');
 
         if (dashIndex != -1) {
-          final english = entryText.substring(0, dashIndex).trim();
-          final swedish = entryText.substring(dashIndex + 3).trim();
+          final first = entryText.substring(0, dashIndex).trim();
+          final second = entryText.substring(dashIndex + 3).trim();
+          String english = first;
+          String swedish = second;
+          if (!fromEnglish) {
+            english = second;
+            swedish = first;
+          }
           _entries.add(VocabEntry(swedish: swedish, english: english, hasDash: true, results: []));
         } else {
           final vocabParts = entryText.split(' ');
           final separatorIndex = vocabParts.length ~/ 2;
-          final englishPart = vocabParts.sublist(0, separatorIndex).join(' ');
-          final swedishPart = vocabParts.sublist(separatorIndex).join(' ');
-          _entries.add(VocabEntry(swedish: swedishPart.trim(), english: englishPart.trim(), hasDash: false, results: []));
+          final first = vocabParts.sublist(0, separatorIndex).join(' ');
+          final second = vocabParts.sublist(separatorIndex).join(' ');
+          String english = first;
+          String swedish = second;
+          if (!fromEnglish) {
+            english = second;
+            swedish = first;
+          }
+          _entries.add(VocabEntry(swedish: swedish.trim(), english: english.trim(), hasDash: false, results: []));
         }
       }
     }

@@ -108,9 +108,16 @@ class VocabHomePage extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () {
                     Provider.of<VocabProvider>(context, listen: false)
-                        .addEntries(_controller.text);
+                        .addEntries(_controller.text, true);
                   },
-                  child: Text('Add Entries'),
+                  child: Text('Add Entries Eng-Swe'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Provider.of<VocabProvider>(context, listen: false)
+                        .addEntries(_controller.text, false);
+                  },
+                  child: Text('Add Entries Swe-Eng'),
                 ),
                 SizedBox(width: 10),
                 ElevatedButton(
